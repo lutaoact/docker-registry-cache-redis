@@ -1,58 +1,59 @@
 # docker-registry-cache-redis
 How to set up a Docker Registry v2 using redis for caching
 
-##Run redis container
-````
+## Run redis container
+```
 $ docker run --name cache-redis -d -p 6379:6379 redis
-````
+```
 
-##Get the IP of the host
+## Get the IP of the host
 Use the IP of the docker host. Example using docker-machine:
-````
+```
 MY_IP=$(docker-machine ip $(docker-machine active))
-````
-##Run Docker Registry v2 container
+```
+## Run Docker Registry v2 container
 For official documentation about registry configuration -> go [here](https://docs.docker.com/registry/configuration/).
-<br>Example:
+
+Example:
 * specify redis as the caching method:  define env var `REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis`
 * define redis minimal conf: define env var `REGISTRY_REDIS_ADDR=$MY_IP:6379`
-````
+```
 $ docker run -d -p 5000:5000 \
-	--restart=always \
-	--name registry \
-	-e REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis \
-	-e REGISTRY_REDIS_ADDR=$MY_IP:6379 \
-	registry:2
-````  	
-##Look at the setup redis-registry running
-````
+    --restart=always \
+    --name registry \
+    -e REGISTRY_STORAGE_CACHE_BLOBDESCRIPTOR=redis \
+    -e REGISTRY_REDIS_ADDR=$MY_IP:6379 \
+    registry:2
+```
+## Look at the setup redis-registry running
+```
 $ docker logs -f registry
-````
-###Startup
-In the startup logs you can see: 
-````
+```
+## Startup
+In the startup logs you can see:
+```
 level=info msg="using redis blob descriptor cache"
-````
+```
 => redis enabled as caching storage
-###Push an image to the regisry
+## Push an image to the regisry
 From another terminal, push an image to the docker registry:
-````
+```
 $ docker tag httpd:latest localhost:5000/httpd
 $ docker push localhost:5000/httpd
-````
-In the logs there is: 
-````
+```
+In the logs there is:
+```
 level=info msg="redis: connect 192.168.99.100:6379"
-````
+```
  => connection succesful with redis server
 
-##Inspect redis DB: run the redis cli-client & query the k/v store
-````
+## Inspect redis DB: run the redis cli-client & query the k/v store
+```
 $ docker run --rm -it \
-	  --link cache-redis:redis \
-	  redis \
-	  sh -c 'exec redis-cli -h "$REDIS_PORT_6379_TCP_ADDR" -p "$REDIS_PORT_6379_TCP_PORT"'
-	
+      --link cache-redis:redis \
+      redis \
+      sh -c 'exec redis-cli -h "$REDIS_PORT_6379_TCP_ADDR" -p "$REDIS_PORT_6379_TCP_PORT"'
+
 172.17.0.107:6379> info keyspace
 # Keyspace
 db0:keys=15,expires=0,avg_ttl=0
@@ -84,5 +85,5 @@ hash
 4) "sha256:94118c67a40b1e95e1f8a573c18b080dcbf9f93cbdad4ee00da83ba44122727c"
 5) "mediatype"
 6) "application/octet-stream"
-````
+```
 --> SUCCESS: the Docker registry used redis as a caching storage
